@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const mongoUrl =
-  process.env.MONGO_URL ||
+  process.env.MONGO_URI ||
   "mongodb+srv://Nikky:Nikky%4066@jolly-junction.dxb1rpk.mongodb.net/Jolly_Junction?appName=jolly-junction";
 
 const connectDb = async () => {

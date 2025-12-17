@@ -7,28 +7,83 @@ const { set } = require("mongoose");
 const sendWelcomeMail = require("../utils/sendWelcomeMail");
 const checkMatchBetweenUsers = require("../utils/checkMatch");
 
+// const register = async (req, res) => {
+//   let { name, email, password, gender, age, location } = req.body;
+
+//   try {
+//     if (!name || !email || !password || !gender) {
+//       return res.status(400).json({
+//         message: "Name, Email and Password and gender are required",
+//       });
+//     }
+//     const findUser = await User.findOne({ email: email });
+//     if (findUser) {
+//       console.log("user is already Registered");
+//       return res.status(403).json({ message: "user alredy registered" });
+//     }
+//     const hashPassword = await bcrypt.hash(password, 12);
+
+//     const newUser = new User({
+//       name: name,
+//       email: email,
+//       password: hashPassword,
+//       gender: gender,
+//       age: age,
+//       isVerified: false,
+//       location: {
+//         type: "Point",
+//         coordinates: location?.coordinates || [0, 0],
+//       },
+//       profilePic: req.file ? req.file.path : null,
+//     });
+//     await newUser.save();
+
+//     const otp = Math.floor(1000 + Math.random() * 9000);
+//     await Otp.create({
+//       email,
+//       otp,
+//       expiresAt: Date.now() + 5 * 60 * 1000,
+//     });
+//     await sendOtpToEmail(email, otp);
+
+//     console.log("User Registration Succussfull", newUser);
+//     return res.status(200).json({
+//       message: "User registered, OTP sent to email, Please Verify the User",
+//       userId: newUser._id,
+//     });
+//   } catch (error) {
+//     console.log("error while registering User", error.message);
+//     return res.status(500).send("Internal Server Error", error);
+//   }
+// };
+
 const register = async (req, res) => {
-  let { name, email, password, gender, age, location } = req.body;
+  const { name, email, password, gender, age, location } = req.body;
 
   try {
+    // 1️⃣ Input validation
     if (!name || !email || !password || !gender) {
       return res.status(400).json({
-        message: "Name, Email and Password and gender are required",
+        message: "Name, Email, Password, and Gender are required",
       });
     }
-    const findUser = await User.findOne({ email: email });
-    if (findUser) {
-      console.log("user is already Registered");
-      return res.status(403).json({ message: "user alredy registered" });
-    }
-    const hashPassword = await bcrypt.hash(password, 12);
 
+    // 2️⃣ Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(403).json({ message: "User already registered" });
+    }
+
+    // 3️⃣ Hash the password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 4️⃣ Create new user
     const newUser = new User({
-      name: name,
-      email: email,
-      password: hashPassword,
-      gender: gender,
-      age: age,
+      name,
+      email,
+      password: hashedPassword,
+      gender,
+      age,
       isVerified: false,
       location: {
         type: "Point",
@@ -36,24 +91,33 @@ const register = async (req, res) => {
       },
       profilePic: req.file ? req.file.path : null,
     });
+
     await newUser.save();
 
+    // 5️⃣ Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000);
+
     await Otp.create({
       email,
       otp,
-      expiresAt: Date.now() + 5 * 60 * 1000,
+      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
     });
+
+    // 6️⃣ Send OTP to email
     await sendOtpToEmail(email, otp);
 
-    console.log("User Registration Succussfull", newUser);
+    // 7️⃣ Response
     return res.status(200).json({
-      message: "User registered, OTP sent to email, Please Verify the User",
+      message:
+        "User registered successfully. OTP sent to email, please verify your account.",
       userId: newUser._id,
     });
   } catch (error) {
-    console.log("error while registering User", error.message);
-    return res.status(500).send("Internal Server Error", error);
+    console.error("Error while registering user:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 

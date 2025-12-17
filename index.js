@@ -6,7 +6,8 @@ const server = http.createServer(app);
 
 initSocket(server);
 
-const PORT = process.env.PORT || 8888;
-server.listen(PORT, () => {
-  console.log(`🚀 Server + Socket running on port ${PORT}`);
+const PORT = process.env.PORT || 8888;  // fallback for local dev
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
+
